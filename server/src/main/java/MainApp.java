@@ -1,9 +1,9 @@
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 public class MainApp {
+
 
     public static void main(String[] args) {
 
@@ -12,14 +12,27 @@ public class MainApp {
             System.out.println("Server started");
             Socket socket = serverSocket.accept();
             System.out.println("Client connected");
+            DataInputStream in = new DataInputStream(socket.getInputStream());
+            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
             while (true) {
-                int in = socket.getInputStream().read();
-                System.out.print((char) in);
+                String msg = in.readUTF();
+                if ("/end".equals(msg)) {
+                    out.writeUTF("/end_confirm");
+                    break;
+                }
+                System.out.println("Client message: " + msg);
+                out.writeUTF("echo: " + msg);
             }
+            in.close();
+            out.close();
+            socket.close();
 
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
+
 }
