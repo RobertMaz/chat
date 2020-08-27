@@ -2,6 +2,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.List;
 
 public class ClientHandler {
     private Socket socket;
@@ -19,27 +20,29 @@ public class ClientHandler {
         this.socket = socket;
         in = new DataInputStream(socket.getInputStream());
         out = new DataOutputStream(socket.getOutputStream());
+
         new Thread(() -> {
             try {
                 while (true) {
                     String msg = in.readUTF();
                     System.out.println("Client message: " + msg);
                     if (msg.startsWith("/auth")) {
-                        String[] tokens = msg.split("\\s",3);
+                        String[] tokens = msg.split("\\s", 3);
                         String nickFromAuthManager = server.getAuthManager().
                                 getNickNameByLoginAndPassword(tokens[1], tokens[2]);
-                       if (nickFromAuthManager != null) {
-                           if (server.isNickBusy(nickFromAuthManager)){
-                               sendMsg("Пользователь уже в чате");
-                               continue;
-                           }
-                           nickname = nickFromAuthManager;
-                           server.subscribe(this);
-                           sendMsg("/authok " + nickname);
-                           break;
-                       } else {
-                           sendMsg("Указан неверный логин или пароль");
-                       }
+                        if (nickFromAuthManager != null) {
+                            if (server.isNickBusy(nickFromAuthManager)) {
+                                sendMsg("Пользователь уже в чате");
+                                continue;
+                            }
+                            nickname = nickFromAuthManager;
+                            server.subscribe(this);
+                            server.broadcastMsg(this.nickname + " в сети");
+                            sendMsg("/authok " + nickname);
+                            break;
+                        } else {
+                            sendMsg("Указан неверный логин или пароль");
+                        }
                     }
                 }
                 while (true) {
@@ -49,6 +52,15 @@ public class ClientHandler {
                         if ("/end".equals(msg)) {
                             out.writeUTF("/end_confirm");
                             break;
+                        } else {
+                            try {
+                                String[] words = msg.split("\\s", 3);
+                                if (words[0].equals("/w")) {
+                                    sendPrivateMessage(words[1], words[2]);
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
                     } else {
                         server.broadcastMsg(nickname + " : " + msg);
@@ -58,14 +70,28 @@ public class ClientHandler {
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
+
                 close();
             }
 
         }).start();
     }
 
+    private void sendPrivateMessage(String nick, String msg) {
+        List<ClientHandler> clients = server.getClients();
+        for(ClientHandler client : clients){
+            if (nick.equals(client.getNickname())){
+                client.sendMsg(this.nickname + " (private): " + msg);
+                sendMsg(nickname + " (private): " + msg);
+                return;
+            }
+        }
+        sendMsg("This user is not entered");
+    }
+
 
     public void close() {
+        server.broadcastMsg(nickname + " вышел из сети");
         server.unsubscribe(this);
         nickname = null;
         try {

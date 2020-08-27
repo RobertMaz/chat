@@ -9,6 +9,10 @@ public class Server {
     private List<ClientHandler> clients;
     private AuthManager authManager;
 
+    public List<ClientHandler> getClients() {
+        return clients;
+    }
+
     public AuthManager getAuthManager() {
         return authManager;
     }
