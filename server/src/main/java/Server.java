@@ -38,6 +38,17 @@ public class Server {
         }
     }
 
+    public void broadcastClientList(){
+        StringBuilder stringBuilder = new StringBuilder("/clients_list ");
+
+        for(ClientHandler o : clients){
+            stringBuilder.append(o.getNickname()).append(" ");
+        }
+        stringBuilder.setLength(stringBuilder.length() - 1);
+        String text = stringBuilder.toString();
+        broadcastMsg(text);
+    }
+
     public boolean isNickBusy(String nickname){
         for(ClientHandler o : clients){
             if (o.getNickname().equals(nickname)){
@@ -49,10 +60,12 @@ public class Server {
 
     public synchronized void subscribe(ClientHandler clientHandler){
         clients.add(clientHandler);
+        broadcastClientList();
     }
 
     public synchronized void unsubscribe(ClientHandler clientHandler){
         clients.remove(clientHandler);
+        broadcastClientList();
     }
 
 }

@@ -36,9 +36,9 @@ public class ClientHandler {
                                 continue;
                             }
                             nickname = nickFromAuthManager;
+                            sendMsg("/authok " + nickname);
                             server.subscribe(this);
                             server.broadcastMsg(this.nickname + " в сети");
-                            sendMsg("/authok " + nickname);
                             break;
                         } else {
                             sendMsg("Указан неверный логин или пароль");
@@ -52,12 +52,18 @@ public class ClientHandler {
                         if ("/end".equals(msg)) {
                             out.writeUTF("/end_confirm");
                             break;
-                        } else {
+                        } else if (msg.startsWith("/w ")) {
                             try {
                                 String[] words = msg.split("\\s", 3);
-                                if (words[0].equals("/w")) {
-                                    sendPrivateMessage(words[1], words[2]);
-                                }
+                                sendPrivateMessage(words[1], words[2]);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        else if(msg.startsWith("/change_nick ")){
+                            try {
+                                String[] words = msg.split("\\s", 2);
+                                nickname = words[1];
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -79,8 +85,8 @@ public class ClientHandler {
 
     private void sendPrivateMessage(String nick, String msg) {
         List<ClientHandler> clients = server.getClients();
-        for(ClientHandler client : clients){
-            if (nick.equals(client.getNickname())){
+        for (ClientHandler client : clients) {
+            if (nick.equals(client.getNickname())) {
                 client.sendMsg(this.nickname + " (private): " + msg);
                 sendMsg(nickname + " (private): " + msg);
                 return;

@@ -25,19 +25,31 @@ public class Network {
         return in.readUTF();
     }
 
+    public boolean isConnected(){
+        if (socket == null || socket.isClosed()){
+            return false;
+        }
+        return true;
+    }
+
     public void close(){
         try {
-            if (socket != null)socket.close();
+            if (socket != null)
+                socket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         try {
-            if (in != null)in.close();
+            if (in != null)
+                in.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         try {
-            if (out != null)out.close();
+            if (out != null)
+                out.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

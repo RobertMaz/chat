@@ -2,9 +2,11 @@ package com.packag;
 
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 
 
@@ -19,6 +21,9 @@ public class Controller implements Initializable {
 
     @FXML
     TextArea textArea;
+
+    @FXML
+    ListView<String> clientsList;
 
     @FXML
     TextField msgField, loginField;
@@ -39,13 +44,32 @@ public class Controller implements Initializable {
         loginBox.setManaged(!authenticated);
         msgField.setVisible(authenticated);
         msgField.setManaged(authenticated);
+        clientsList.setVisible(authenticated);
+        clientsList.setManaged(authenticated);
     }
 
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setAuthenticated(false);
+        clientsList.setOnMouseClicked(event -> {
+                    if (event.getClickCount() == 2) {
+                        msgField.setText("/w " + clientsList.getSelectionModel().getSelectedItem() + " ");
+                        msgField.requestFocus();
+                        msgField.selectEnd();
+                    }
+                }
+
+        );
+
+    }
+
+    public void connect() {
         try {
+            if (network != null && network.isConnected()) {
+                return;
+            }
+            setAuthenticated(false);
             network = new Network(8181);
             Thread t = new Thread(() -> {
                 try {
@@ -62,10 +86,25 @@ public class Controller implements Initializable {
 
                     while (true) {
                         String msg = network.readMsg();
-                        if ("/end_confirm".equals(msg)) {
-                            break;
+                        if (msg.startsWith("/")) {
+                            if ("/end_confirm".equals(msg)) {
+                                break;
+                            }
+                            if (msg.startsWith("/clients_list")) {
+                                Platform.runLater(() -> {
+                                    clientsList.getItems().clear();
+                                    String[] tokens = msg.split(" ");
+                                    for (int i = 1; i < tokens.length; i++) {
+                                        if (!nickname.equals(tokens[i])) {
+                                            clientsList.getItems().add(tokens[i]);
+                                        }
+                                    }
+                                });
+
+                            }
+                        } else {
+                            textArea.appendText(msg + "\n");
                         }
-                        textArea.appendText(msg + "\n");
                     }
 
                 } catch (IOException e) {
@@ -76,15 +115,20 @@ public class Controller implements Initializable {
                     });
                 } finally {
                     network.close();
-                    Platform.exit();
+                    setAuthenticated(false);
+                    nickname = null;
                 }
             }
             );
+
             t.setDaemon(true);
             t.start();
 
         } catch (IOException e) {
-            throw new RuntimeException("Impossible connected to Server");
+            Alert alert = new Alert(Alert.AlertType.WARNING,
+                    "Impossible connected to Server", ButtonType.OK);
+            alert.showAndWait();
+
         }
     }
 
@@ -100,8 +144,9 @@ public class Controller implements Initializable {
         }
     }
 
-    public void tryToAuth(ActionEvent actionEvent){
+    public void tryToAuth(ActionEvent actionEvent) {
         try {
+            connect();
             network.sendMsg("/auth " + loginField.getText() + " " + passField.getText());
             loginField.clear();
             passField.clear();
