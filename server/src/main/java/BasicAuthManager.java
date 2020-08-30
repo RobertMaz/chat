@@ -14,6 +14,10 @@ public class BasicAuthManager implements AuthManager {
         return null;
     }
 
+    @Override
+    public void updateNickname(String oldNickname, String newNickname) {
+    }
+
     private class Entry {
         private String login;
         private String password;
