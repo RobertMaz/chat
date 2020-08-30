@@ -63,10 +63,16 @@ public class ClientHandler {
                         else if(msg.startsWith("/change_nick ")){
                             try {
                                 String[] words = msg.split("\\s", 2);
+                                server.getAuthManager().updateNickname(nickname, words[1]);
                                 nickname = words[1];
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
+                        }
+                        else if (msg.startsWith("/help")){
+                            sendMsg(" /end closed chat\n" +
+                                    " /w private message\n" +
+                                    " /change_nick change your nick\n" );
                         }
                     } else {
                         server.broadcastMsg(nickname + " : " + msg);
